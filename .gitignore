@@ -1,0 +1,11 @@
+# private: keys, the owner's own Bluetooth captures and handover notes
+secrets/
+captures/
+NEXT_STEPS.md
+.claude/
+
+.venv/
+.venv-ha/
+__pycache__/
+.pytest_cache/
+.DS_Store

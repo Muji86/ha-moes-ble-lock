@@ -1,0 +1,91 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Choose the lock",
+        "data": {
+          "address": "Bluetooth device"
+        },
+        "description": "Pick the lock. Tuya Bluetooth locks advertise as \"TY\"; if you have several, match the MAC address shown in Smart Life (device → ✎ → Device information)."
+      },
+      "credentials": {
+        "title": "Lock keys",
+        "description": "Enter the keys for {address}. The README explains where each one comes from.\n\nClose Smart Life first: the lock accepts only one Bluetooth connection at a time. Setup only logs in to check the keys; it does not unlock.",
+        "data": {
+          "local_key": "Local key",
+          "uuid": "UUID",
+          "device_id": "Device ID",
+          "check_code": "BLE unlock check code (8 characters)"
+        },
+        "data_description": {
+          "local_key": "16 characters. Tuya IoT platform → API Explorer → Query Device Details → local_key.",
+          "uuid": "From the same Query Device Details result (uuid field).",
+          "device_id": "The lock's Device ID, shown in the Tuya IoT platform (Devices tab).",
+          "check_code": "8 characters the app sends with every unlock. See the README: \"Finding the check code\"."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-enter lock keys",
+        "description": "The lock at {address} rejected the stored keys. This happens if it was removed or re-paired in Smart Life. Enter the current keys.",
+        "data": {
+          "local_key": "Local key",
+          "uuid": "UUID",
+          "device_id": "Device ID",
+          "check_code": "BLE unlock check code (8 characters)"
+        },
+        "data_description": {
+          "local_key": "16 characters. Tuya IoT platform → API Explorer → Query Device Details → local_key.",
+          "uuid": "From the same Query Device Details result (uuid field).",
+          "device_id": "The lock's Device ID, shown in the Tuya IoT platform (Devices tab).",
+          "check_code": "8 characters the app sends with every unlock. See the README: \"Finding the check code\"."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "The lock rejected these keys.",
+      "not_advertising": "The lock isn't advertising. Is Smart Life connected to it, or is it out of range?",
+      "cannot_connect": "Could not connect to the lock. Try again.",
+      "invalid_local_key": "The local key looks too short.",
+      "invalid_check_code": "The check code must be exactly 8 characters.",
+      "unknown": "Unexpected error; see the logs."
+    },
+    "abort": {
+      "already_configured": "This lock is already set up.",
+      "no_devices_found": "No Tuya BLE devices found. Close Smart Life and make sure a Bluetooth adapter or proxy is in range.",
+      "reauth_successful": "Keys updated."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Connection behaviour",
+        "data": {
+          "idle_timeout": "Stay connected after activity (seconds, 0 = always connected)",
+          "poll_interval": "Refresh state and battery every (minutes)"
+        },
+        "data_description": {
+          "idle_timeout": "While connected, state changes arrive instantly and commands are fast, but Smart Life cannot connect.",
+          "poll_interval": "Each refresh briefly connects to the lock."
+        }
+      }
+    }
+  },
+  "entity": {
+    "switch": {
+      "auto_lock": {
+        "name": "Auto-lock"
+      }
+    },
+    "sensor": {
+      "signal_strength": {
+        "name": "Signal strength"
+      }
+    },
+    "binary_sensor": {
+      "connected": {
+        "name": "Connected"
+      }
+    }
+  }
+}
