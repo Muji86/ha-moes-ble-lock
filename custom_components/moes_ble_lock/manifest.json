@@ -7,6 +7,9 @@
       "connectable": true
     }
   ],
+  "categories": [
+    "security_safety.locks_access"
+  ],
   "codeowners": [
     "@Muji86"
   ],
