@@ -91,3 +91,22 @@ def test_vendored_lib_in_sync():
         assert (root / "tuya_ble_lock" / name).read_bytes() == \
             (root / "custom_components/moes_ble_lock/lib" / name).read_bytes(), \
             f"{name} out of sync: run tools/sync_lib.sh"
+
+
+def test_uuid_from_advertisement_roundtrip():
+    import hashlib
+    sd = bytes.fromhex("490000080102030405060708")
+    key = hashlib.md5(sd).digest()
+    ct = p._aes(key, key, b"0123456789abcdef", encrypt=True)
+    md = bytes.fromhex("00000100") + ct
+    assert p.uuid_from_advertisement(sd, md) == "0123456789abcdef"
+    assert p.uuid_from_advertisement(sd, md[:10]) is None
+
+
+def test_check_code_from_status():
+    import base64
+    dp73 = base64.b64encode(b"\x00\x01\xff\xffAb12Cd34\x01" + bytes(20)).decode()
+    dp71 = base64.b64encode(b"\x00\x01\xff\xffZz98Yy76\x01\x6a\xfc\xc8\xe3\x00\x00").decode()
+    assert p.check_code_from_status({"remote_pd_setkey_check": dp73}) == "Ab12Cd34"
+    assert p.check_code_from_status({"ble_unlock_check": dp71}) == "Zz98Yy76"
+    assert p.check_code_from_status({"ble_unlock_check": ""}) is None

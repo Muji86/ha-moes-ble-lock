@@ -16,3 +16,8 @@ CONF_POLL_INTERVAL = "poll_interval"
 DEFAULT_IDLE_TIMEOUT = 60  # seconds
 # How often to connect briefly to refresh state and battery when idle.
 DEFAULT_POLL_INTERVAL = 30  # minutes
+
+# Tuya IoT platform (developer account) credentials, kept so more locks can be added and
+# changed keys re-fetched without typing anything. Only used during setup / re-auth.
+CONF_ACCESS_ID = "access_id"
+CONF_ACCESS_SECRET = "access_secret"

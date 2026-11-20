@@ -118,6 +118,48 @@ def _aes(key: bytes, iv: bytes, data: bytes, encrypt: bool) -> bytes:
     return op.update(data) + op.finalize()
 
 
+TUYA_COMPANY_ID = 0x07D0
+
+
+def uuid_from_advertisement(service_data: bytes, manufacturer_data: bytes) -> str | None:
+    """The device's Tuya uuid, decrypted from its advert (no keys needed).
+
+    service_data: the FD50 service data; manufacturer_data: company 0x07D0's data (without the
+    company id). key = iv = MD5(service_data); uuid = AES-CBC decrypt of manufacturer_data[4:20].
+    """
+    if len(manufacturer_data) < 20 or not service_data:
+        return None
+    key = hashlib.md5(service_data).digest()
+    raw = _aes(key, key, manufacturer_data[4:20], encrypt=False)
+    try:
+        uuid = raw.decode("ascii")
+    except UnicodeDecodeError:
+        return None
+    return uuid if uuid.isalnum() else None
+
+
+def check_code_from_status(status: dict[str, object]) -> str | None:
+    """The 8-char BLE unlock check code from a lock's cloud status (raw DPs are base64).
+
+    DP 73 remote_pd_setkey_check is `.... <code8> ...` (code at bytes 4..12);
+    DP 71 ble_unlock_check (last report) is `0001 ffff <code8> 01 <ts> 0000`.
+    """
+    import base64
+
+    for code in ("remote_pd_setkey_check", "ble_unlock_check"):
+        value = status.get(code)
+        if not isinstance(value, str) or not value:
+            continue
+        try:
+            raw = base64.b64decode(value)
+        except ValueError:
+            continue
+        cand = raw[4:12]
+        if len(cand) == 8 and cand.isascii() and cand.decode().isalnum():
+            return cand.decode()
+    return None
+
+
 # --------------------------------------------------------------------------- data types
 
 @dataclass(frozen=True)

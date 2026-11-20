@@ -3,7 +3,8 @@
 <img src="custom_components/moes_ble_lock/brand/icon.png" width="96" align="right" alt="">
 
 Local Bluetooth control of the MOES ES830 Bluetooth cabinet lock (Tuya BLE, service `0xFD50`).
-It needs no cloud, no Tuya IoT subscription and no Smart Life app once it's set up.
+Setup fetches the keys from your Tuya account once. After that it needs no cloud and no
+Smart Life app.
 It talks to the lock directly, through a Home Assistant Bluetooth adapter or an ESPHome
 Bluetooth proxy.
 
@@ -26,8 +27,8 @@ time**, so whichever side connects first wins; Home Assistant lets go 60 s after
    **within about 5–10 m of the lock**. The signal should be −80 dBm or better.
    The **Signal strength** sensor helps you place the proxy.
 2. The lock already paired in **Smart Life** or **Tuya Smart**.
-3. Four values for the lock: **Device ID**, **UUID** and **Local key** (from the Tuya IoT
-   platform, below) and an 8-character **check code** (from a phone Bluetooth log, below).
+3. A free **Tuya developer account** with your Smart Life account linked to it. Setup uses it
+   once to fetch each lock's keys. After that, everything is local. See below.
 
 ## Install
 
@@ -47,56 +48,48 @@ folder, then restart.
 1. **Close Smart Life** on every phone, or turn off Bluetooth, so the lock is free.
 2. Home Assistant usually discovers it on its own: **Settings → Devices & services →
    Discovered**. If not, select **Add integration** and search for **MOES Tuya BLE Lock**.
-   Tuya locks advertise as `TY`. If you have several, match the MAC address in Smart Life
-   (lock → ✎ → **Device information**).
-3. Enter the four values. Setup logs in to the lock to check them; it does **not** unlock.
+3. Choose **Log in to my Tuya developer account (automatic)** and enter your project's
+   **Access ID** and **Access Secret**.
+   Home Assistant then:
+   - finds which of your locks this is, from the identity it broadcasts
+   - fetches its local key and unlock check code
+   - logs in to the lock to check them (it does **not** unlock)
+   - names it as in Smart Life
+4. **Adding more locks:** the account is remembered, so each lock is matched and added as soon as
+   you select it under **Discovered**.
 
-## Getting the keys
+If a lock is re-paired in Smart Life, it gets a new key. Home Assistant notices and fetches the
+new key from the account.
 
-### Device ID, UUID and Local key (Tuya IoT platform, free)
+### Setting up the Tuya developer account (free, once)
 
 1. Sign up at [platform.tuya.com](https://platform.tuya.com) and create a **Cloud project**:
    development method **Smart Home**, and the **data center that matches your Smart Life
-   account's region**.
+   account's region** (UK and Europe: Central Europe).
 2. In the project: **Devices → Link App Account → Add App Account**. Scan the QR code with
-   Smart Life (**Me → ⊞ scan icon**). Your devices now appear under **All Devices**; copy the
-   lock's **Device ID**.
-3. **Cloud → API Explorer → Device Management → Query Device Details**, enter the Device ID
-   and select **Submit Request**. The result holds `local_key` and `uuid`.
+   Smart Life (**Me →** scan icon at the top). Your locks appear under **All Devices**.
+3. **Overview → Authorization Key** shows the **Access ID** and **Access Secret** to enter
+   in Home Assistant.
 
-You only need the account during setup. Re-pairing the lock in Smart Life gives it a new
-local key; Home Assistant will ask for the new one.
+The free IoT Core plan has to be active when you add a lock. If setup reports a subscription or
+permission error, renew it under **Cloud → Cloud Services**. Locks already set up don't need it.
 
-### Check code (one Bluetooth log from an Android phone)
+### Entering the keys by hand (alternative)
 
-The lock only accepts an unlock that carries an 8-character code. Smart Life gets it from
-the Tuya cloud and sends it in every unlock. So far the simplest way to read it is to log
-one unlock:
+Choose **Enter the keys myself**. You need four values:
 
-1. Android **Settings → About phone →** tap **Build number** 7× to enable Developer options.
-2. **Developer options → Enable Bluetooth HCI snoop log → Enabled**. Turn Bluetooth off and
-   on again.
-3. Open Smart Life and **unlock the lock once**.
-4. Get the log onto a computer with [ADB](https://developer.android.com/tools/adb):
-   `adb bugreport bugreport.zip`. Then extract `FS/data/log/bt/btsnoop_hci.log`. The path
-   differs on some phones; search the zip for `btsnoop_hci.log`.
-5. Create `lock.json` with what you have so far:
-
-   ```json
-   {"device_id": "...", "uuid": "...", "local_key": "...", "check_code": "", "mac": "DC:23:51:AA:BB:CC"}
-   ```
-
-6. Run the decryptor. It only reads the file and prints the code at the end:
-
-   ```bash
-   python3 -m venv .venv && .venv/bin/pip install cryptography
-   .venv/bin/python tools/tuya_decrypt.py btsnoop_hci.log lock.json
-   ```
-
-7. Turn the snoop log off again.
-
-The code has stayed the same across many unlocks. It is probably tied to your account, not
-to each unlock.
+- **Device ID, UUID and Local key:** from the API Explorer, **Device Management → Query Device
+  Details** (`/v2.0/cloud/thing/{id}`). Other endpoints return a different `local_key` that
+  these locks reject.
+- **Check code:** 8 characters, the last bytes of the lock's `ble_unlock_check` status. Or read
+  it from a phone Bluetooth log of one unlock from Smart Life:
+  1. Android **Developer options → Enable Bluetooth HCI snoop log**. Turn Bluetooth off and on.
+  2. Unlock the lock once in Smart Life.
+  3. Run `adb bugreport bugreport.zip` and extract `btsnoop_hci.log`.
+  4. Put the other values in a `lock.json`:
+     `{"device_id": "...", "uuid": "...", "local_key": "...", "check_code": "", "mac": "DC:23:51:AA:BB:CC"}`
+  5. Run `python tools/tuya_decrypt.py btsnoop_hci.log lock.json`, after
+     `pip install cryptography`. It prints the code at the end.
 
 ## Options
 
@@ -124,10 +117,11 @@ Assistant dependency:
 ```
 tuya_ble_lock/protocol.py   sans-IO protocol (framing, AES, handshake, DPs)
 tuya_ble_lock/client.py     async bleak client
+tuya_ble_lock/cloud.py      read-only Tuya developer-platform client (setup only)
 tuya_ble_lock/__main__.py   command-line tool: scan / status / watch / unlock / lock / hold-open
 tests/                      offline tests (replay captured frames; need the owner's keys, else skipped)
 tools/                      btsnoop parser, offline decryptor, advert listener, icon generator
-custom_components/moes_ble_lock/   the Home Assistant integration (vendors protocol.py + client.py in lib/)
+custom_components/moes_ble_lock/   the Home Assistant integration (vendors tuya_ble_lock in lib/)
 ```
 
 Command-line use, with the four values in `secrets/lock.json`:

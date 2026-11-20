@@ -40,6 +40,29 @@
           "device_id": "The lock's Device ID, shown in the Tuya IoT platform (Devices tab).",
           "check_code": "8 characters the app sends with every unlock. See the README: \"Finding the check code\"."
         }
+      },
+      "method": {
+        "title": "Get the lock's keys",
+        "description": "The lock at {address} needs its Tuya keys. Home Assistant can fetch them from your Tuya developer account (the cloud is only used now, not afterwards), or you can type them in.",
+        "menu_options": {
+          "cloud": "Log in to my Tuya developer account (automatic)",
+          "credentials": "Enter the keys myself"
+        }
+      },
+      "cloud": {
+        "title": "Tuya developer account",
+        "description": "Enter your project's keys from platform.tuya.com → Cloud → Development → your project → Overview → Authorization Key. The project must have your Smart Life account linked (Devices → Link App Account).\n\nHome Assistant finds the lock in your account automatically, checks the keys on the lock (without unlocking), and remembers this account so adding more locks takes one click.",
+        "data": {
+          "access_id": "Access ID / Client ID",
+          "access_secret": "Access Secret / Client Secret"
+        }
+      },
+      "cloud_pick": {
+        "title": "Which lock is this?",
+        "description": "The lock at {address} isn't broadcasting its identity right now, so pick it from your account.",
+        "data": {
+          "lock": "Lock"
+        }
       }
     },
     "error": {
@@ -48,12 +71,17 @@
       "cannot_connect": "Could not connect to the lock. Try again.",
       "invalid_local_key": "The local key looks too short.",
       "invalid_check_code": "The check code must be exactly 8 characters.",
-      "unknown": "Unexpected error; see the logs."
+      "unknown": "Unexpected error; see the logs.",
+      "invalid_cloud_auth": "Tuya rejected the Access ID or Secret.",
+      "cloud_error": "The Tuya cloud returned an error: {error}. If it mentions your subscription or permissions, renew the free IoT Core trial in your project's Service API page.",
+      "no_cloud_locks": "No locks were found in this Tuya project. Link your Smart Life account to the project (Devices → Link App Account) and make sure its data centre matches your account's region."
     },
     "abort": {
       "already_configured": "This lock is already set up.",
       "no_devices_found": "No Tuya BLE devices found. Close Smart Life and make sure a Bluetooth adapter or proxy is in range.",
-      "reauth_successful": "Keys updated."
+      "reauth_successful": "Keys updated.",
+      "not_in_account": "This lock isn't in the linked Tuya account. Is it paired to a different Smart Life account?",
+      "no_cloud_locks": "All the locks in your Tuya account are already set up."
     }
   },
   "options": {
