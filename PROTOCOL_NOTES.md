@@ -139,3 +139,16 @@ Practical notes:
   placed near the cabinet: lock heard at **−78 dBm**, and HA now uses the proxy as the best source.
   The proxy also receives the scan response (name `TY`, manufacturer 0x07D0 data).
 - Pi built-in adapter: −93 to −97 dBm (unusable for connections).
+
+## Cloud provisioning findings (2026-11-20)
+
+- **Advert → UUID, no keys needed:** `key = MD5(FD50 service data)`, then
+  `AES-128-CBC(key, iv=key).decrypt(manufacturer_data[4:20])` = the device's 16-char Tuya `uuid`.
+  This identifies which cloud device a discovered lock is.
+- **Check code is per lock** (7 locks on one account → 6 distinct codes visible, 1 lock never
+  unlocked via BLE). It is in the cloud device status: `remote_pd_setkey_check` (DP 73) bytes
+  4..12 for every lock, and the last `ble_unlock_check` (DP 71) report `0001 ffff <code> 01 <ts> 0000`.
+- **Smart Life QR login (tuya-device-sharing-sdk, HA's Tuya client id)** returns id, name, uuid,
+  product id and status (so the check code) — but its `local_key` is **not** the BLE key:
+  login with it fails (no reply to DEVICE_INFO), while the Tuya IoT platform key works.
+- Tuya IoT platform (`/v1.0/devices/{id}` local_key) is so far the only working source of the key.
